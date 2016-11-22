@@ -19,14 +19,46 @@ var helper = require('./helpers.js');
 
 
 var App = React.createClass({
+  getInitialState: function() {
+    return {
+      fishes: {}, 
+      order: {}
+    }
+  }, 
+  
+  addFish: function(fish) {
+    console.log(fish); 
+    var timestamp = (new Date()).getTime();
+    //update state
+    console.log(this); 
+    this.state.fishes['fish-' + timestamp] = fish;  
+    
+    //set the state
+    this.setState({ fishes: this.state.fishes }); 
+  }, 
+
+  getSampleFish: function() {
+    this.setState({
+      fishes : require('./sample-fishes')
+    }); 
+  }, 
+
+  renderFish: function(key) {
+    console.log(this.state); 
+    return <Fish key={key} index={key} detail={this.state.fishes[key]} /> 
+  }, 
+
   render: function() {
     return (
       <div className="catch-of-the-day">
         <div className="menu">
           <Header tagline="Seafood of the Ocean" /> 
+          <ul className="list-of-fishes">
+            {Object.keys(this.state.fishes).map(this.renderFish)}
+          </ul> 
         </div>
         <Order /> 
-        <Inventory /> 
+        <Inventory addFish={this.addFish} getSampleFish={this.getSampleFish}/> 
 
       </div>
     )
@@ -34,13 +66,48 @@ var App = React.createClass({
 });
 
 /* 
+  Fish Component 
+*/  
+var Fish = React.createClass({
+  render: function() {
+    var isAvailable = (this.props.detail.status === 'available' ? true: false); 
+    var buttonText = (isAvailable ? 'Add to Order' : 'Sold Out!'); 
+    return (
+      <li className="menu-fish">
+        <img src={this.props.detail.image} /> 
+        <h3 className="fish-name">{this.props.detail.name}
+          <span className="price">{helper.formatPrice(this.props.detail.price)}</span>
+        </h3>
+        <p>{this.props.detail.desc}</p>  
+        <button disabled={!isAvailable}>{buttonText}</button>
+      </li> 
+    )
+  }
+}); 
+
+
+/* 
   Add Fish Form 
 */ 
 
 var AddFishForm = React.createClass({
+  createFish: function(event) {
+    event.preventDefault(); 
+    var fish = {
+      name: this.refs.name.value, 
+      price: this.refs.price.value, 
+      status: this.refs.status.value,
+      desc: this.refs.desc.value,
+      image: this.refs.image.value
+    }
+    //console.log(fish); 
+    this.props.addFish(fish); 
+    this.refs.fishForm.reset(); 
+  }, 
+  
   render: function() {
     return (
-      <form className="fish-edit" onSubmit={this.createFish}>
+      <form className="fish-edit" ref="fishForm" onSubmit={this.createFish}>
         <input type="text" ref="name" placeholder="Fish Name" />
         <input type="text" ref="price" placeholder="Fish Price" />
         <select ref="status">
@@ -85,8 +152,9 @@ var Inventory = React.createClass({
   render: function() {
     return (
       <div>
-        This is the Inventory  
-        <AddFishForm /> 
+        <h2>Inventory</h2>   
+        <AddFishForm {...this.props} /> 
+        <button onClick={this.props.getSampleFish}>Get Sample Fish</button> 
       </div>
     )
   }
